@@ -1,6 +1,13 @@
 package nl.finnt730;
 
+import java.io.File;
+import java.util.EnumSet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.jsonstructure.DynamicJson;
+
 import haxe.root.JsonStructureLib;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -8,12 +15,8 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import nl.finnt730.commands.CommandMigrator;
 import nl.finnt730.listeners.CommandListener;
+import nl.finnt730.listeners.GnomeBotDevListener;
 import nl.finnt730.listeners.PasteListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.EnumSet;
 
 public final class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -59,6 +62,7 @@ public final class Main {
             discordLogger.info("Starting Discord bot...");
             JDABuilder.createLight(botToken, EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGE_POLLS, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS))
                     .addEventListeners(new CommandListener())
+                    .addEventListeners(new GnomeBotDevListener())
                     .addEventListeners(new PasteListener())
                     .enableCache(CacheFlag.ROLE_TAGS)
                     .setMemberCachePolicy(MemberCachePolicy.ALL) // Would do ONLINE but I don't think that will work if you aren't literally set to Online status.

@@ -106,7 +106,7 @@ public final class PasteListener extends ListenerAdapter {
                                     }
                                 }
                             }
-                            createPaste(attachmentContent, event.getChannel(), fileNames, event.getUserId());
+                            createPaste(attachmentContent, event.getChannel(), fileNames, event.getUserId(),message);
                         }
                     } catch (Exception e) {
                         logger.error("Error processing paste reaction", e);
@@ -119,7 +119,7 @@ public final class PasteListener extends ListenerAdapter {
     }
 
     private static void createPaste(List<String> contentList, MessageChannel channel, 
-                                   List<String> fileNames, String userId) {
+                                   List<String> fileNames, String userId, Message message) {
         CompletableFuture.runAsync(() -> {
             try {
                 logger.info("Creating paste for user {} with {} files", userId, contentList.size());
@@ -164,7 +164,7 @@ public final class PasteListener extends ListenerAdapter {
                     }
                 }
                 
-                channel.sendMessage(pasteResponse.toString()).queue();
+                message.reply(pasteResponse.toString()).mentionRepliedUser(false).queue();
                 logger.info("Paste creation completed for user {}", userId);
             } catch (Exception e) {
                 logger.error("Error in paste creation process", e);
@@ -174,6 +174,7 @@ public final class PasteListener extends ListenerAdapter {
 
     private static boolean isPasteable(Message.Attachment attachment) {
         if (attachment.isVideo() || attachment.isImage()) return false;
+        if(attachment.getFileName().equals("cd_launcherlog")) return true;
         return !DENYLISTED_EXTENSIONS.contains(attachment.getFileExtension());
     }
 }

@@ -49,6 +49,7 @@ public final class AliasCommand extends ReservedCommand {
             }
         } catch (Exception ex) {
             event.getChannel().sendMessage("Something went wrong while trying to add aliases. Try again.").queue();
+            ex.printStackTrace();
         }
     }
 }
