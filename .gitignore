@@ -43,3 +43,7 @@ bin/
 /env.json
 userdb.json
 /commands
+prod.db
+logs/forgebot-errors.log
+logs/forgebot-io.log
+logs/forgebot.log

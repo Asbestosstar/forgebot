@@ -18,7 +18,7 @@ import nl.finnt730.commands.builtin.reserved.RegisterNewCommand;
 public class CommandCache {
     private static final Map<String, Command> cache = new HashMap<>();
     public static final String DEFAULT_PREFIX = "!";
-    public static final String HOI4_ESP = "º";//In HOI4 they always use the key next to 1 no matter the layout.
+    public static final String HOI4_ESP = "\u00BA";//In HOI4 they always use the key next to 1 no matter the layout.
     private static final DatabaseManager dbManager = DatabaseManager.getInstance();
 
     // Init builtin commands
