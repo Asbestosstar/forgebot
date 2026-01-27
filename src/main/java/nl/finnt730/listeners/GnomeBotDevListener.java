@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import nl.finnt730.util.Utils;
 
 public class GnomeBotDevListener extends ListenerAdapter {
 	private static final Logger logger = LoggerFactory.getLogger("nl.finnt730.linkconverter");
@@ -31,9 +32,9 @@ public class GnomeBotDevListener extends ListenerAdapter {
 				return;
 			}
 
-			String content = event.getMessage().getContentRaw();
-			if (BARE_LINK_PATTERN.matcher(content).find()) {
-				logger.debug("Found gnomebot.dev log link in message from user {}", event.getAuthor().getName());
+			// Only react to CA dump messages
+			if (Utils.isProbablyCADump(event.getMessage())) {
+				logger.debug("Detected CA dump from user {}", event.getAuthor().getName());
 				event.getMessage().addReaction(LINK_EMOJI_OBJ).queue();
 			}
 		} catch (Exception e) {
