@@ -19,6 +19,9 @@ import nl.finnt730.listeners.DeleteListener;
 import nl.finnt730.listeners.GnomeBotDevListener;
 import nl.finnt730.listeners.PasteListener;
 import nl.finnt730.listeners.SelfDestructListener;
+import nl.finnt730.listeners.SlashCommandListener;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 public final class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -62,15 +65,69 @@ public final class Main {
             logger.info("Environment configuration loaded successfully");
 
             discordLogger.info("Starting Discord bot...");
-            JDABuilder.createLight(botToken, EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGE_POLLS, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS))
+            net.dv8tion.jda.api.JDA jda = JDABuilder.createLight(botToken, EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGE_POLLS, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS))
                     .addEventListeners(new CommandListener())
                     .addEventListeners(new GnomeBotDevListener())
                     .addEventListeners(new SelfDestructListener())
                     .addEventListeners(new PasteListener())
                     .addEventListeners(new DeleteListener())
+                    .addEventListeners(new SlashCommandListener())
                     .enableCache(CacheFlag.ROLE_TAGS)
                     .setMemberCachePolicy(MemberCachePolicy.ALL) // Would do ONLINE but I don't think that will work if you aren't literally set to Online status.
                     .build();
+                    
+            jda.updateCommands()
+                .addCommands(
+                    Commands.slash("exec", "Execute a custom command/trick")
+                        .addOption(OptionType.STRING, "trickname", "The name of the trick", true)
+                        .addOption(OptionType.STRING, "args", "Optional arguments", false),
+                    Commands.slash("register", "Register a new trick")
+                        .addOption(OptionType.STRING, "name", "Trick name", true)
+                        .addOption(OptionType.STRING, "contents", "Trick contents", true),
+                    Commands.slash("alias", "Add aliases to a trick")
+                        .addOption(OptionType.STRING, "command", "Existing trick name", true)
+                        .addOption(OptionType.STRING, "aliases", "Space separated aliases", true),
+                    Commands.slash("delete", "Delete a trick")
+                        .addOption(OptionType.STRING, "name", "Trick name", true),
+                    Commands.slash("description", "Update a trick's description")
+                        .addOption(OptionType.STRING, "name", "Trick name", true)
+                        .addOption(OptionType.STRING, "description", "New description", true),
+                    Commands.slash("pastesite", "Set your preferred paste site")
+                        .addOption(OptionType.STRING, "site", "Paste site ID", true),
+                    Commands.slash("find", "Find a trick")
+                        .addOption(OptionType.STRING, "target", "Search query", true)
+                        .addOption(OptionType.INTEGER, "page", "Page number", false),
+                    Commands.slash("mclogs", "Upload to mclogs")
+                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
+                    Commands.slash("gnomebot", "Upload to gnomebot")
+                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
+                    Commands.slash("capaste", "Upload to capaste")
+                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
+                    Commands.slash("cdpaste", "Upload to cdpaste")
+                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
+                    Commands.slash("mmd", "Upload to mmd")
+                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
+                    Commands.slash("pastesdev", "Upload to pastesdev")
+                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
+                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false)
+                ).queue();
             
             discordLogger.info("Discord bot started successfully");
             logger.info("ForgeBot initialization completed successfully");

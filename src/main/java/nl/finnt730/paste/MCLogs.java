@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Common Minecraft Logging site owned by Aternos. Used by Aternos, Prism Launcher, Crash Assistant, CrashDetector, NotEnoughCrashes, Luna Pixel Studios and many others.
  */
-public sealed class MCLogs implements PasteSite permits GnomeBotPaste {
+public sealed class MCLogs implements PasteSite permits GnomeBotPaste,CAPaste {
 
     private static final String API_URL = "https://api.mclo.gs/1/log";
     private static final int MAX_LINES = 25000;
