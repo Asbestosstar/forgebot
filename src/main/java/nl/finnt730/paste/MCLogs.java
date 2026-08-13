@@ -39,7 +39,7 @@ public sealed class MCLogs implements PasteSite permits GnomeBotPaste,CAPaste {
     }
 
     @Override
-    public String getResultURL(String content) {
+    public String getResultURL(String content) throws java.io.IOException {
         try {
             
             // Prepare the POST data
@@ -64,7 +64,7 @@ public sealed class MCLogs implements PasteSite permits GnomeBotPaste,CAPaste {
             // Check response code
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                return null;
+                throw new java.io.IOException("HTTP " + responseCode);
             }
             
             // Read the response
@@ -88,11 +88,8 @@ public sealed class MCLogs implements PasteSite permits GnomeBotPaste,CAPaste {
                 }
             }
             
-            return null; // Failed to extract URL
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+            throw new java.io.IOException("Failed to extract URL from response");
+        } catch (java.io.IOException e) { throw e; } catch (Exception e) { throw new java.io.IOException(e); }
     }
 
 	@Override

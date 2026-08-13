@@ -2,8 +2,10 @@ package nl.finnt730.listeners;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import nl.finnt730.DatabaseManager;
 import nl.finnt730.UserDB;
@@ -16,6 +18,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SlashCommandListener extends ListenerAdapter {
     private static final Logger logger = LoggerFactory.getLogger("nl.finnt730.slashcommands");
@@ -48,18 +52,25 @@ public class SlashCommandListener extends ListenerAdapter {
             case "pastesite": handlePasteSite(event); break;
             case "find": handleFind(event); break;
             default:
-                if (PASTE_SITES.contains(name)) handlePasteUpload(event, name);
-                else event.reply("Unknown command.").setEphemeral(true).queue();
+                event.reply("Unknown command.").setEphemeral(true).queue();
+        }
+    }
+
+    @Override
+    public void onMessageContextInteraction(MessageContextInteractionEvent event) {
+        String name = event.getName(); // e.g., "Upload to mclogs"
+        String siteId = name.replace("Upload to ", "").toLowerCase();
+        if (PASTE_SITES.contains(siteId)) {
+            event.deferReply().queue();
+            processPasteUpload(event.getHook(), event.getTarget(), siteId);
         }
     }
 
     private void handleExec(SlashCommandInteractionEvent event) {
         String trickName = event.getOption("trickname", OptionMapping::getAsString);
         String args = event.getOption("args", "", OptionMapping::getAsString);
-        
         Optional<DatabaseManager.CommandData> cmdData = DatabaseManager.getInstance().getCommand(trickName);
         if (cmdData.isEmpty()) cmdData = DatabaseManager.getInstance().getCommandByAlias(trickName);
-        
         if (cmdData.isPresent()) {
             String output = cmdData.get().data();
             if (!args.isEmpty()) output += " " + args;
@@ -72,7 +83,6 @@ public class SlashCommandListener extends ListenerAdapter {
     private void handleRegister(SlashCommandInteractionEvent event) {
         String name = event.getOption("name", OptionMapping::getAsString);
         String contents = event.getOption("contents", OptionMapping::getAsString);
-        
         if (DatabaseManager.getInstance().commandExists(name) || DatabaseManager.getInstance().isTakenAlias(name)) {
             event.reply("Command with name " + name + " already exists!").setEphemeral(true).queue();
             return;
@@ -85,14 +95,12 @@ public class SlashCommandListener extends ListenerAdapter {
         String commandName = event.getOption("command", OptionMapping::getAsString);
         String aliasesStr = event.getOption("aliases", OptionMapping::getAsString);
         String[] parts = aliasesStr.split("\\s+");
-        
         if (!DatabaseManager.getInstance().commandExists(commandName)) {
             event.reply("Command `" + commandName + "` not found!").setEphemeral(true).queue();
             return;
         }
         var cmdData = DatabaseManager.getInstance().getCommand(commandName);
         if (cmdData.isEmpty()) return;
-        
         List<String> newAliases = new ArrayList<>();
         int added = 0;
         for (String alias : parts) {
@@ -161,71 +169,174 @@ public class SlashCommandListener extends ListenerAdapter {
         event.reply(builder.toString()).queue();
     }
 
-    private void handlePasteUpload(SlashCommandInteractionEvent event, String siteId) {
-        String link = event.getOption("link", "", OptionMapping::getAsString);
-        List<Message.Attachment> files = new ArrayList<>();
-        for (int i = 1; i <= 3; i++) {
-            Message.Attachment att = event.getOption("file" + i, OptionMapping::getAsAttachment);
-            if (att != null) files.add(att);
-        }
-        if (link.isEmpty() && files.isEmpty()) {
-            event.reply("Please provide a link or at least one file to upload.").setEphemeral(true).queue();
-            return;
-        }
-        event.deferReply().queue();
+    private void processPasteUpload(InteractionHook hook, Message targetMessage, String siteId) {
         CompletableFuture.runAsync(() -> {
             try {
-                List<String> contents = new ArrayList<>();
-                List<String> names = new ArrayList<>();
-                if (!link.isEmpty()) {
-                    if (PasteReader.isMcLogsInstance(link) && MCLOGS_INSTANCES.contains(siteId)) {
-                        String id = PasteReader.getMcLogsId(link);
-                        String baseUrl = switch (siteId) {
-                            case "gnomebot" -> "https://gnomebot.dev/paste/mclogs/";
-                            case "capaste" -> "https://kostromdan.dev/paste/mclogs/";
-                            default -> "https://mclo.gs/";
-                        };
-                        event.getHook().sendMessage("🔗 [" + siteId + "](<" + baseUrl + id + ">)").queue();
-                        return;
-                    } else {
-                        String content = PasteReader.read(link);
-                        if (content != null) {
-                            contents.add(content);
-                            names.add("converted-log");
-                        } else {
-                            event.getHook().sendMessage("❌ Failed to read content from link.").queue();
-                            return;
-                        }
-                    }
-                }
-                for (Message.Attachment att : files) {
-                    try (InputStream is = att.getProxy().download().get()) {
-                        String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                        contents.add(content);
-                        names.add(att.getFileName());
-                    } catch (Exception e) { logger.error("Error reading attachment", e); }
-                }
-                if (contents.isEmpty()) {
-                    event.getHook().sendMessage("❌ No valid content found to upload.").queue();
-                    return;
-                }
                 PasteSite targetSite = PasteSite.getPure(siteId);
                 StringBuilder response = new StringBuilder();
                 boolean first = true;
-                for (int i = 0; i < contents.size(); i++) {
-                    String url = targetSite.getResultURL(contents.get(i));
-                    if (url != null) {
-                        String logName = names.get(i).replaceFirst("\\.[^.]+$", "");
-                        if (!first) response.append(" | ");
-                        response.append("📄 [").append(logName).append("](<").append(url).append(">)");
-                        first = false;
+                boolean processedAnything = false;
+                
+                String content = targetMessage.getContentRaw();
+                
+                // 1. Process links in the message
+                java.util.Set<String> processedUrls = new java.util.HashSet<>();
+                
+                // Pass 1: Markdown links [label](url) or [label](<url>)
+                Pattern mdLinkPattern = Pattern.compile("\\[([^\\]]+)\\]\\(<?(https?://[^>\\s]+)>?\\)");
+                Matcher mdMatcher = mdLinkPattern.matcher(content);
+                while (mdMatcher.find()) {
+                    String label = mdMatcher.group(1).trim();
+                    String link = mdMatcher.group(2);
+                    if (label.isEmpty()) label = "log";
+                    processedUrls.add(link);
+                    
+                    if (PasteReader.isMcLogsInstance(link) && MCLOGS_INSTANCES.contains(siteId)) {
+                        String id = PasteReader.getMcLogsId(link);
+                        if (id != null) {
+                            String baseUrl = switch (siteId) {
+                                case "gnomebot" -> "https://gnomebot.dev/paste/mclogs/";
+                                case "capaste" -> "https://kostromdan.dev/paste/mclogs/";
+                                default -> "https://mclo.gs/";
+                            };
+                            if (!first) response.append(" | ");
+                            response.append("🔗 [").append(label).append("](<").append(baseUrl).append(id).append(">)");
+                            first = false;
+                            processedAnything = true;
+                        }
+                    } else {
+                        try {
+                            String linkContent = PasteReader.read(link);
+                            if (!targetSite.largeEnough(linkContent)) {
+                                if (!first) response.append(" | ");
+                                response.append(String.format("❌ The link `%s` is too large for `%s`. Consider using a larger paste site like `pastesdev` or `cdpaste`.", label, siteId));
+                                first = false;
+                                processedAnything = true;
+                            } else {
+                                try {
+                                    String url = targetSite.getResultURL(linkContent);
+                                    if (!first) response.append(" | ");
+                                    response.append("📄 [").append(label).append("](<").append(url).append(">)");
+                                    first = false;
+                                    processedAnything = true;
+                                } catch (java.io.IOException ex) {
+                                    if (!first) response.append(" | ");
+                                    response.append(String.format("❌ Failed to upload link content to `%s` (%s).", siteId, ex.getMessage()));
+                                    first = false;
+                                    processedAnything = true;
+                                }
+                            }
+                        } catch (java.io.IOException e) {
+                            if (!first) response.append(" | ");
+                            response.append(String.format("❌ Failed to read link `%s` (%s).", label, e.getMessage()));
+                            first = false;
+                            processedAnything = true;
+                        }
                     }
                 }
-                if (first) response.append("❌ Failed to upload files to ").append(siteId).append(".");
-                event.getHook().sendMessage(response.toString()).queue();
+                
+                // Pass 2: Bare links
+                Matcher bareMatcher = Pattern.compile("https?://\\S+").matcher(content);
+                while (bareMatcher.find()) {
+                    String link = bareMatcher.group().replaceAll("[)\\]}>.,;!?]+$", "");
+                    if (processedUrls.contains(link)) continue;
+                    String label = "log";
+                    
+                    if (PasteReader.isMcLogsInstance(link) && MCLOGS_INSTANCES.contains(siteId)) {
+                        String id = PasteReader.getMcLogsId(link);
+                        if (id != null) {
+                            String baseUrl = switch (siteId) {
+                                case "gnomebot" -> "https://gnomebot.dev/paste/mclogs/";
+                                case "capaste" -> "https://kostromdan.dev/paste/mclogs/";
+                                default -> "https://mclo.gs/";
+                            };
+                            if (!first) response.append(" | ");
+                            response.append("🔗 [").append(label).append("](<").append(baseUrl).append(id).append(">)");
+                            first = false;
+                            processedAnything = true;
+                        }
+                    } else {
+                        try {
+                            String linkContent = PasteReader.read(link);
+                            if (!targetSite.largeEnough(linkContent)) {
+                                if (!first) response.append(" | ");
+                                response.append(String.format("❌ The link `%s` is too large for `%s`. Consider using a larger paste site like `pastesdev` or `cdpaste`.", link, siteId));
+                                first = false;
+                                processedAnything = true;
+                            } else {
+                                try {
+                                    String url = targetSite.getResultURL(linkContent);
+                                    if (!first) response.append(" | ");
+                                    response.append("📄 [").append(label).append("](<").append(url).append(">)");
+                                    first = false;
+                                    processedAnything = true;
+                                } catch (java.io.IOException ex) {
+                                    if (!first) response.append(" | ");
+                                    response.append(String.format("❌ Failed to upload link content to `%s` (%s).", siteId, ex.getMessage()));
+                                    first = false;
+                                    processedAnything = true;
+                                }
+                            }
+                        } catch (java.io.IOException e) {
+                            if (!first) response.append(" | ");
+                            response.append(String.format("❌ Failed to read link `%s` (%s).", link, e.getMessage()));
+                            first = false;
+                            processedAnything = true;
+                        }
+                    }
+                }
+                
+                // 2. Process attachments
+                for (Message.Attachment att : targetMessage.getAttachments()) {
+                    try (InputStream is = att.getProxy().download().get()) {
+                        String attContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                        if (!targetSite.largeEnough(attContent)) {
+                            if (!first) response.append(" | ");
+                            response.append(String.format("❌ The file `%s` is too large for `%s`. Consider using a larger paste site like `pastesdev` or `cdpaste`.", att.getFileName(), siteId));
+                            first = false;
+                            processedAnything = true;
+                        } else {
+                            try {
+                                String url = targetSite.getResultURL(attContent);
+                                String logName = att.getFileName().replaceFirst("\\.[^.]+$", "");
+                                if (!first) response.append(" | ");
+                                response.append("📄 [").append(logName).append("](<").append(url).append(">)");
+                                first = false;
+                                processedAnything = true;
+                            } catch (java.io.IOException ex) {
+                                if (!first) response.append(" | ");
+                                response.append(String.format("❌ Failed to upload `%s` to `%s` (%s).", att.getFileName(), siteId, ex.getMessage()));
+                                first = false;
+                                processedAnything = true;
+                            }
+                        }
+                    } catch (Exception e) { logger.error("Error reading attachment", e); }
+                }
+                
+                // 3. If no links and no attachments, but there is text, upload the text
+                if (!processedAnything && !content.isEmpty() && targetMessage.getAttachments().isEmpty()) {
+                    if (!targetSite.largeEnough(content)) {
+                        response.append(String.format("❌ The message content is too large for `%s`. Consider using a larger paste site like `pastesdev` or `cdpaste`.", siteId));
+                        processedAnything = true;
+                    } else {
+                        try {
+                            String url = targetSite.getResultURL(content);
+                            response.append("📄 [message-content](<").append(url).append(">)");
+                            processedAnything = true;
+                        } catch (java.io.IOException ex) {
+                            response.append(String.format("❌ Failed to upload message content to `%s` (%s).", siteId, ex.getMessage()));
+                            processedAnything = true;
+                        }
+                    }
+                }
+                
+                if (!processedAnything) {
+                    response.append("❌ Failed to find or upload any valid content from the message.");
+                }
+                hook.sendMessage(response.toString()).queue();
             } catch (Exception e) {
                 logger.error("Error in paste upload", e);
-                event.getHook().sendMessage("❌ Error: " + e.getMessage()).queue();
+                hook.sendMessage("❌ Error: " + e.getMessage()).queue();
             }
         });
     }

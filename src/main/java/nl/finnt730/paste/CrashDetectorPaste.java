@@ -37,7 +37,7 @@ public final class CrashDetectorPaste implements PasteSite {
 
 
  @Override
-public String getResultURL(String content) {
+public String getResultURL(String content) throws java.io.IOException {
     try {
         if (!largeEnough(content)) {
             return null;
@@ -66,8 +66,7 @@ public String getResultURL(String content) {
 
         int responseCode = connection.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            System.err.println("Upload failed: HTTP " + responseCode);
-            return null;
+            throw new java.io.IOException("HTTP " + responseCode);
         }
 
         // Read JSON response
@@ -95,11 +94,8 @@ public String getResultURL(String content) {
             }
         }
 
-        return null; // Failed to extract
-    } catch (Exception e) {
-        e.printStackTrace();
-        return null;
-    }
+        throw new java.io.IOException("Failed to extract link from response");
+    } catch (java.io.IOException e) { throw e; } catch (Exception e) { throw new java.io.IOException(e); }
 }
 
    
@@ -108,6 +104,6 @@ public String getResultURL(String content) {
 
     @Override
     public String getId() {
-        return "crashdetector";
+        return "cdpaste";
     }
 }

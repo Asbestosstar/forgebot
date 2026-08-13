@@ -37,7 +37,7 @@ public final class PastesDev implements PasteSite {
     }
 
     @Override
-    public String getResultURL(String content) {
+    public String getResultURL(String content) throws java.io.IOException {
         try {
             // Verify content size
             if (!largeEnough(content)) {
@@ -67,7 +67,7 @@ public final class PastesDev implements PasteSite {
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_CREATED && 
                 responseCode != HttpURLConnection.HTTP_OK) {
-                return null;
+                throw new java.io.IOException("HTTP " + responseCode);
             }
             
             // Try to get the key from Location header first
@@ -105,11 +105,8 @@ public final class PastesDev implements PasteSite {
                 }
             }
             
-            return null; // Failed to extract key
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+            throw new java.io.IOException("Failed to extract key from response");
+        } catch (java.io.IOException e) { throw e; } catch (Exception e) { throw new java.io.IOException(e); }
     }
 
 	@Override

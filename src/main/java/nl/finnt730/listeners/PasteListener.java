@@ -138,9 +138,8 @@ public final class PasteListener extends ListenerAdapter {
                         
                         logger.debug("Creating paste for file: {} ({} characters)", fileName, content.length());
                         PasteSite pasteSite = PasteSite.get(userId, content);
-                        String pasteUrl = pasteSite.getResultURL(content);
-                        
-                        if (pasteUrl != null && !pasteUrl.isEmpty()) {
+                        try {
+                            String pasteUrl = pasteSite.getResultURL(content);
                             String formattedLink = String.format("[%s](<%s>)", logName, pasteUrl);
                             
                             if (firstLog) {
@@ -150,11 +149,11 @@ public final class PasteListener extends ListenerAdapter {
                                 pasteResponse.append(" | ").append(formattedLink);
                             }
                             logger.debug("Successfully created paste for {}: {}", fileName, pasteUrl);
-                        } else {
+                        } catch (java.io.IOException e) {
                             if (!firstLog) pasteResponse.append(" | ");
-                            pasteResponse.append(String.format(ERROR_RESPONSE_FORMAT, fileName));
+                            pasteResponse.append(String.format("❌ Unable to create paste for %s (%s)", fileName, e.getMessage()));
                             firstLog = false;
-                            logger.warn("Failed to create paste for file: {}", fileName);
+                            logger.warn("Failed to create paste for file: {} ({})", fileName, e.getMessage());
                         }
                     } catch (Exception e) {
                         if (!firstLog) pasteResponse.append(" | ");

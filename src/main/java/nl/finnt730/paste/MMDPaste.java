@@ -26,7 +26,7 @@ public final class MMDPaste implements PasteSite {
     }
 
     @Override
-    public String getResultURL(String content) {
+    public String getResultURL(String content) throws java.io.IOException {
         try {
             
             // Prepare parameters
@@ -54,7 +54,7 @@ public final class MMDPaste implements PasteSite {
             // Check response code
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                return null;
+                throw new java.io.IOException("HTTP " + responseCode);
             }
             
             // Read the response
@@ -69,7 +69,7 @@ public final class MMDPaste implements PasteSite {
                 
                 String responseStr = response.toString();
                 if (responseStr.startsWith("Error:") || responseStr.isEmpty()) {
-                    return null;
+                    throw new java.io.IOException("API Error: " + responseStr);
                 }
                 
                 // Ensure the URL is properly formatted (add https:// if missing)
@@ -79,10 +79,7 @@ public final class MMDPaste implements PasteSite {
                 
                 return responseStr;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        } catch (java.io.IOException e) { throw e; } catch (Exception e) { throw new java.io.IOException(e); }
     }
 
 	@Override

@@ -92,41 +92,17 @@ public final class Main {
                     Commands.slash("description", "Update a trick's description")
                         .addOption(OptionType.STRING, "name", "Trick name", true)
                         .addOption(OptionType.STRING, "description", "New description", true),
-                    Commands.slash("pastesite", "Set your preferred paste site")
+                    Commands.slash("pastesite", "[Legacy] Set your preferred paste site for auto-reactions")
                         .addOption(OptionType.STRING, "site", "Paste site ID", true),
                     Commands.slash("find", "Find a trick")
                         .addOption(OptionType.STRING, "target", "Search query", true)
                         .addOption(OptionType.INTEGER, "page", "Page number", false),
-                    Commands.slash("mclogs", "Upload to mclogs")
-                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
-                    Commands.slash("gnomebot", "Upload to gnomebot")
-                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
-                    Commands.slash("capaste", "Upload to capaste")
-                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
-                    Commands.slash("cdpaste", "Upload to cdpaste")
-                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
-                    Commands.slash("mmd", "Upload to mmd")
-                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false),
-                    Commands.slash("pastesdev", "Upload to pastesdev")
-                        .addOption(OptionType.STRING, "link", "Link to convert/re-upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file1", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file2", "File to upload", false)
-                        .addOption(OptionType.ATTACHMENT, "file3", "File to upload", false)
+                    Commands.message("Upload to mclogs"),
+                    Commands.message("Upload to cdpaste"),
+                    Commands.message("Upload to pastesdev"),
+                    Commands.message("Upload to capaste"),
+                    Commands.message("Upload to gnomebot"),
+                    Commands.message("Upload to mmd")
                 ).queue();
             
             discordLogger.info("Discord bot started successfully");

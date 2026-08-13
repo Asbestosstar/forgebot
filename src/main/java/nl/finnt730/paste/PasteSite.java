@@ -8,7 +8,7 @@ public interface PasteSite {
     public String getId();
     public boolean largeEnough(String content);
     public boolean supportsGZip();
-    public String getResultURL(String content);
+    public String getResultURL(String content) throws java.io.IOException;
     
     static PasteSite get(String userId, String content) {
         return PasteSiteRegistry.getInstance().get(userId, content);
@@ -42,7 +42,7 @@ public interface PasteSite {
                 sitesById.values().stream().findFirst()
                     .orElseThrow(() -> new IllegalStateException("No paste sites available!")));
             
-            this.fallbackSite = sitesById.getOrDefault("crashdetector", defaultSite);
+            this.fallbackSite = sitesById.getOrDefault("cdpaste", defaultSite);
         }
         
         static PasteSiteRegistry getInstance() {
